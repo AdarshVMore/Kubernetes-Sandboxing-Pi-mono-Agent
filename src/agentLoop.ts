@@ -14,8 +14,8 @@ import {
 const authStorage = AuthStorage.create("/custom/agent/auth.json");
 
 // Runtime API key override (not persisted)
-if (process.env.MY_KEY) {
-  authStorage.setRuntimeApiKey("anthropic", process.env.MY_KEY);
+if (process.env.ANTHROPIC_API) {
+  authStorage.setRuntimeApiKey("anthropic", process.env.ANTHROPIC_API);
 }
 
 // Model registry (no custom models.json)

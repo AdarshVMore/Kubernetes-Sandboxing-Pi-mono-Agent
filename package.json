@@ -14,6 +14,8 @@
     "@earendil-works/pi-coding-agent": "^0.79.1",
     "@mariozechner/pi-coding-agent": "^0.73.1",
     "@types/express": "^5.0.6",
-    "express": "^5.2.1"
+    "@types/redis": "^4.0.11",
+    "express": "^5.2.1",
+    "redis": "^6.0.0"
   }
 }

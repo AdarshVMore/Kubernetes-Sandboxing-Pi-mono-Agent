@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: pods-replicaset
+  labels:
+    tier: lease-pods
+spec:
+  replicas: 8
+  selector:
+    matchLabels:
+      app: command-execution
+  template:
+    metadata:
+      labels:
+        app: command-execution
+    spec:
+      containers:
+      - name: node-container
+        image: node:20-alpine
+        ports:
+        - containerPort: 3001
