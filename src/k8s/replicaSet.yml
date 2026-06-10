@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
-  name: pods-replicaset
+  name: my-replicaset
   labels:
     tier: lease-pods
 spec:
@@ -19,3 +19,4 @@ spec:
         image: node:20-alpine
         ports:
         - containerPort: 3001
+          
