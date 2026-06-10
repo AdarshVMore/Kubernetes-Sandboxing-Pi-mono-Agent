@@ -7,10 +7,11 @@ const app = express()
 
 app.use(express.json())
 
+const redisClient = await getRedisConnection()
+
 manipulatePods("kubectl apply -f ./src/k8s/replicaSet.yml") // this will start all the 8Pods
 
 app.post("/chat", async (req,res)=>{
-    const redisClient = await getRedisConnection()
     let {prompt, sessionId} = req.body
     if(!sessionId) {
         sessionId =  `session-${Math.random()}`      

@@ -10,7 +10,7 @@ import {
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import { getRedisConnection } from "./redisClient";
-import fs, { Utf8Stream } from "fs";
+import fs from "fs";
 import type { chatRequest } from "./types/index";
 
 // Set up auth storage (custom location)
@@ -77,6 +77,7 @@ const redisClient = await getRedisConnection();
 let initialConvo;
 
 let response = await redisClient.brPop("chat-session-req", 0);
+
 if (!response) {
   throw new Error("no response");
 }
@@ -104,49 +105,66 @@ if (fileExist) {
       console.log(data);
     },
   );
+  console.log("initial convo => ", initialConvo)
 } else {
-  const filePath = `./sessions/${data.sessionId}.json`;
+  const filePath = `./sessions/${data.sessionId}.ts`;
 
   console.log("creating a new file...", filePath);
 
-  fs.writeFile(
-    filePath,
-    JSON.stringify(
-      {
-        user: data.prompt,
-      },
-      null,
-      2,
-    ),
-    "utf-8",
-    (err) => {
-      if (err) {
-        console.error("Error writing file:", err);
-        return;
-      }
+  const content = `const conversation = [{user: ${data.prompt}}]`;
 
-      console.log("File created and written successfully!");
-    },
-  );
+  fs.writeFile(filePath, content, "utf-8", (err) => {
+    if (err) {
+      console.error("Error writing file:", err);
+      return;
+    }
+
+    console.log("File created and written successfully!");
+  });
 }
 
 let done = false;
+const conversation: string[] = [];
 
 session.subscribe(async (event) => {
+  let collectedChunks = ""
   if (
     event.type === "message_update" &&
     event.assistantMessageEvent.type === "text_delta"
   ) {
-    if(event.assistantMessageEvent.delta === "EXECUTED"){
-      done = true
+
+    if (event.assistantMessageEvent.delta === "EXECUTED") {
+      done = true;
+      let resToSend;
+      
+      if (conversation.length > 1) {
+        resToSend = conversation[conversation.length - 1]
+          ? conversation[conversation.length - 2]
+          : "";
+      }
+
+      await redisClient.lPush(
+        "chat-session-res",
+        resToSend ? resToSend : "no response",
+      );
+      console.log("\n\n\n final Conversation : \n", conversation )
     }
     process.stdout.write(event.assistantMessageEvent.delta);
+    collectedChunks += event.assistantMessageEvent.delta
+    
+  }
+  if(event.type === "message_end"){
+      conversation.push(collectedChunks)
   }
 });
 
 let aiResponse: any = await session.prompt(data.prompt);
 const startTime = Date.now();
 const timeout = 30 * 1000;
+
+if (done) {
+  redisClient.lPush("", aiResponse);
+}
 
 while (!done && Date.now() - startTime < timeout) {
   console.log("\n\nrunning the loop");
@@ -155,7 +173,7 @@ while (!done && Date.now() - startTime < timeout) {
     `this is the initial user prompt: ${userPrompt} \n\n this is the AI Response: ${aiResponse} \n\n, is the users request has been satisfied return only one word as "EXECUTED" and nothing else `,
   );
 
-  aiResponse = nextResponse
+  aiResponse = nextResponse;
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
