@@ -137,6 +137,9 @@ session.subscribe(async (event) => {
     event.type === "message_update" &&
     event.assistantMessageEvent.type === "text_delta"
   ) {
+    if(event.assistantMessageEvent.delta === "EXECUTED"){
+      done = true
+    }
     process.stdout.write(event.assistantMessageEvent.delta);
   }
 });
@@ -148,14 +151,11 @@ const timeout = 30 * 1000;
 while (!done && Date.now() - startTime < timeout) {
   console.log("\n\nrunning the loop");
   const userPrompt = data.prompt;
-  aiResponse = await session.prompt(
+  const nextResponse = await session.prompt(
     `this is the initial user prompt: ${userPrompt} \n\n this is the AI Response: ${aiResponse} \n\n, is the users request has been satisfied return only one word as "EXECUTED" and nothing else `,
   );
-  console.log("\n\n response : \n", aiResponse);
-  if (aiResponse === "EXECUTED") {
-    done = true;
-    console.log("\n\nexiting cause request is satisfied");
-  }
+
+  aiResponse = nextResponse
 
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
